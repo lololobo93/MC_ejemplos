@@ -1,4 +1,5 @@
 # Este programa simula el modelo de Ising bidimensional
+# empleando el algoritmo de Wolf
 
 import numpy as np
 import numpy.random as rd
@@ -16,7 +17,7 @@ n_Bins = 10
 mcSteps = 100
 
 nt = 19
-T_list = np.linspace(5.0, 0.5, nt)
+T_list = np.linspace(4, 1.5, nt)
 J = 1
 N = 50
 Nspins = N**2
@@ -26,17 +27,31 @@ Tc = 2.0/np.log(1.0 + np.sqrt(2))*J
 animate = True
 bw_cmap = colors.ListedColormap(['black', 'white'])
 
-def mcmove(config, beta):
-    for _ in range(Nspins):
-        a = rd.randint(0, N)
-        b = rd.randint(0, N)
-        s =  config[a, b]
-        nei = ((config[(a+1) % N, b]) +
-             (config[a, (b+1) % N]) +
-             (config[(a-1) % N, b]) +
-             (config[a, (b-1) % N]))
-        if (2*J*s*nei <= 0) or (rd.rand() < np.exp(-2*J*s*nei*beta)):
-            config[a, b] = -s
+def wolf_met(config, padd, a, b, s):
+    if (s == config[(a+1) % N, b]):
+        if (rd.rand() < padd):
+            config[(a+1) % N, b] *= -1
+            wolf_met(config, padd, (a+1) % N, b, s)
+    if (s == config[a, (b+1) % N]):
+        if (rd.rand() < padd):
+            config[a, (b+1) % N] *= -1
+            wolf_met(config, padd, a, (b+1) % N, s)
+    if (s == config[(a-1) % N, b]):
+        if (rd.rand() < padd):
+            config[(a-1) % N, b] *= -1
+            wolf_met(config, padd, (a-1) % N, b, s)
+    if (s == config[a, (b-1) % N]):
+        if (rd.rand() < padd):
+            config[a, (b-1) % N] *= -1
+            wolf_met(config, padd, a, (b-1) % N, s)
+
+def mcmove(config, padd):
+    
+    a = rd.randint(0, N)
+    b = rd.randint(0, N)
+    s =  config[a, b]
+    config[a, b] *= -1
+    wolf_met(config, padd, a, b, s)
 
 def calcEnergy(config):
     energy = 0
@@ -75,11 +90,11 @@ for m in range(len(T_list)):
 # Equilibrar sistema
     config = initialstate(N)
     for _ in range(eqSteps):
-        mcmove(config, 1.0/T_list[m])
+        mcmove(config, 1-np.exp(-2*J/T_list[m]))   
 
     for _ in range(n_Bins):
         for l in range(mcSteps):
-            mcmove(config, 1.0/T_list[m])   
+            mcmove(config, 1-np.exp(-2*J/T_list[m]))   
         
         Ene = calcEnergy(config)        
         Mag = calcMag(config)           
