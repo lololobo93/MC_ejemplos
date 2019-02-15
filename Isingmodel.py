@@ -18,12 +18,12 @@ mcSteps = 100
 nt = 19
 T_list = np.linspace(5.0, 0.5, nt)
 J = 1
-N = 50
+N = 8
 Nspins = N**2
 
 Tc = 2.0/np.log(1.0 + np.sqrt(2))*J
 
-animate = True
+animate = False
 bw_cmap = colors.ListedColormap(['black', 'white'])
 
 def mcmove(config, beta):
