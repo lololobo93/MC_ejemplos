@@ -88,25 +88,25 @@ for j in range(ly+1):
     elif i==lx:
      #print "neighs" 
      #print kn+1,2*neig[(k-1)/2,0] +1
-     ntest[:,kn]=test[:,2*neig[(k-1)/2,0]]
-     ntrain[:,kn]=train[:,2*neig[(k-1)/2,0]]
+     ntest[:,kn]=test[:,2*neig[int((k-1)/2),0]]
+     ntrain[:,kn]=train[:,2*neig[int((k-1)/2),0]]
      kn=kn+1
      #print kn+1,2*neig[(k-1)/2,0]+1+1
-     ntest[:,kn]=test[:,2*neig[(k-1)/2,0]+1]      
-     ntrain[:,kn]=train[:,2*neig[(k-1)/2,0]+1] 
+     ntest[:,kn]=test[:,2*neig[int((k-1)/2),0]+1]      
+     ntrain[:,kn]=train[:,2*neig[int((k-1)/2),0]+1] 
      kn=kn+1  
  
 
 ytest=np.ones(test.shape[0],dtype=np.int)
-ytest[0:test.shape[0]/2]=0
+ytest[0:int(test.shape[0]/2)]=0
 
 ytrain=np.ones(train.shape[0],dtype=np.int)
-ytrain[0:train.shape[0]/2]=0
+ytrain[0:int(train.shape[0]/2)]=0
 
 
-np.savetxt('ytestT.txt',ytest,fmt='%1.1d')
-np.savetxt('XtestT.txt',ntest,fmt='%1.1d')
+np.savetxt('ytestT2.txt',ytest,fmt='%1.1d')
+np.savetxt('XtestT2.txt',ntest,fmt='%1.1d')
 
-np.savetxt('ytrainT.txt',ytrain,fmt='%1.1d')
-np.savetxt('XtrainT.txt',ntrain,fmt='%1.1d')
+np.savetxt('ytrainT2.txt',ytrain,fmt='%1.1d')
+np.savetxt('XtrainT2.txt',ntrain,fmt='%1.1d')
  

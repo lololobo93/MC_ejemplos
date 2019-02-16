@@ -3,6 +3,9 @@ import gzip
 import os
 import urllib
 import numpy
+import torch
+from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torchvision import transforms, utils
 SOURCE_URL = 'http://yann.lecun.com/exdb/mnist/'
 
 
@@ -10,34 +13,23 @@ def maybe_download(filename, work_directory):
     filepath = os.path.join(work_directory, filename)
     return filepath
 
-
-def _read32(bytestream):
-    dt = numpy.dtype(numpy.uint32).newbyteorder('>')
-    return numpy.frombuffer(bytestream.read(4), dtype=dt)
-
-
 def extract_images(filename,lx):
     """Extract the images into a 4D uint8 numpy array [index, y, x, depth]."""
-    print 'Extracting', filename,'aaaaaa'
+    print('Extracting', filename,'aaaaaa')
     
-    #with gzip.open(filename) as bytestream:
-    #    magic = _read32(bytestream)
-    #    if magic != 2051:
-    #        raise ValueError(
-    #            'Invalid magic number %d in MNIST image file: %s' %
-    #            (magic, filename))
-    #    num_images = _read32(bytestream)
-    #    rows = _read32(bytestream)
-    #    cols = _read32(bytestream)
-    #    buf = bytestream.read(rows * cols * num_images)
-    #    data = numpy.frombuffer(buf, dtype=numpy.uint8)
-    #    data = data.reshape(num_images, rows, cols, 1)
-    data=numpy.loadtxt(filename)
+    data=numpy.loadtxt(filename,dtype='int64')
     dim=data.shape[0]
-    data=data.reshape(dim,lx,lx,2) # the two comes from the 2 site unite cell of the toric code. 
-    print data.shape
+    data=data.reshape(dim, lx, lx, 2) 
+    # Convert shape from [num examples, rows, columns, depth]
+    # to [num examples, rows*columns] (assuming depth == 1)
+    data = data.reshape(data.shape[0],
+                        data.shape[1] * data.shape[2] * 2)
+    # Convert from [0, 255] -> [0.0, 1.0].
+    data = data.astype(numpy.float64)
+    # images = numpy.multiply(images, 1.0 / 255.0) # commented since it is ising variables
+    data = numpy.multiply(data, 1.0 ) # multiply by one, instead
+    print(data.shape)
     return data
-
 
 def dense_to_one_hot(labels_dense, num_classes=10):
     """Convert class labels from scalars to one-hot vectors."""
@@ -47,26 +39,24 @@ def dense_to_one_hot(labels_dense, num_classes=10):
     labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
     return labels_one_hot
 
-
 def extract_labels(nlabels,filename, one_hot=False):
     """Extract the labels into a 1D uint8 numpy array [index]."""
-    print 'Extracting', filename,'bbbccicicicicib'
+    print('Extracting', filename,'bbbccicicicicib')
 
-    labels=numpy.loadtxt(filename,dtype='uint8')
+    labels=numpy.loadtxt(filename,dtype='int64')
       
     if one_hot:
-       print "LABELS ONE HOT"
-       print labels.shape
+       print("LABELS ONE HOT")
+       print(labels.shape)
        XXX=dense_to_one_hot(labels,nlabels)
-       print XXX.shape
+       print(XXX.shape)
        return dense_to_one_hot(labels,nlabels)
-    print "LABELS"
-    print labels.shape
+    print("LABELS")
+    print(labels.shape)
     return labels
 
-
-class DataSet(object):
-    def __init__(self, images, labels, fake_data=False):
+class CustomDataSet(Dataset):
+    def __init__(self, images, labels, lx, fake_data=False):
         if fake_data:
             self._num_examples = 10000
         else:
@@ -74,69 +64,31 @@ class DataSet(object):
                 "images.shape: %s labels.shape: %s" % (images.shape,
                                                        labels.shape))
             self._num_examples = images.shape[0]
-            # Convert shape from [num examples, rows, columns, depth]
-            # to [num examples, rows*columns] (assuming depth == 1)
-            assert images.shape[3] == 2 # the 2 comes from the toric code unit cell
-            images = images.reshape(images.shape[0],
-                                    images.shape[1] * images.shape[2]*2) #the 2 comes from the toric code unit cell
-            # Convert from [0, 255] -> [0.0, 1.0].
-            images = images.astype(numpy.float32)
-            # images = numpy.multiply(images, 1.0 / 255.0) # commented since it is ising variables
-            images = numpy.multiply(images, 1.0 ) # multiply by one, instead
         self._images = images
         self._labels = labels
-        self._epochs_completed = 0
-        self._index_in_epoch = 0
+        # self.to_tensor = transforms.Compose([
+        #                         transforms.Resize(lx*lx),
+        #                         transforms.ToTensor()])
 
-    @property
-    def images(self):
-        return self._images
+    def __getitem__(self, index):
+        single_image = self._images[index]
+        single_image_label = self._labels[index]
 
-    @property
-    def labels(self):
-        return self._labels
+        # img_as_tensor = self.to_tensor(single_image)
 
-    @property
-    def num_examples(self):
+        return (single_image, single_image_label)
+
+    def __len__(self):
         return self._num_examples
-
-    @property
-    def epochs_completed(self):
-        return self._epochs_completed
-
-    def next_batch(self, batch_size, fake_data=False):
-        """Return the next `batch_size` examples from this data set."""
-        if fake_data:
-            fake_image = [1.0 for _ in xrange(784)]
-            fake_label = 0
-            return [fake_image for _ in xrange(batch_size)], [
-                fake_label for _ in xrange(batch_size)]
-        start = self._index_in_epoch
-        self._index_in_epoch += batch_size
-        if self._index_in_epoch > self._num_examples:
-            # Finished epoch
-            self._epochs_completed += 1
-            # Shuffle the data
-            perm = numpy.arange(self._num_examples)
-            numpy.random.shuffle(perm)
-            self._images = self._images[perm]
-            self._labels = self._labels[perm]
-            # Start next epoch
-            start = 0
-            self._index_in_epoch = batch_size
-            assert batch_size <= self._num_examples
-        end = self._index_in_epoch
-        return self._images[start:end], self._labels[start:end]
-
 
 def read_data_sets(nlabels,lx, train_dir, fake_data=False, one_hot=False ):
     class DataSets(object):
         pass
     data_sets = DataSets()
     if fake_data:
-        data_sets.train = DataSet([], [], fake_data=True)
-        data_sets.validation = DataSet([], [], fake_data=True)
-        data_sets.test = DataSet([], [], fake_data=True)
+        data_sets.train = CustomDataSet([], [], lx, fake_data=True)
+        data_sets.validation = CustomDataSet([], [], lx, fake_data=True)
+        data_sets.test = CustomDataSet([], [], lx, fake_data=True)
         return data_sets
     TRAIN_IMAGES = 'Xtrain.txt'
     TRAIN_LABELS = 'ytrain.txt'
@@ -163,8 +115,13 @@ def read_data_sets(nlabels,lx, train_dir, fake_data=False, one_hot=False ):
     validation_labels = train_labels[:VALIDATION_SIZE]
     train_images = train_images[VALIDATION_SIZE:]
     train_labels = train_labels[VALIDATION_SIZE:]
-    data_sets.train = DataSet(train_images, train_labels)
-    data_sets.validation = DataSet(validation_images, validation_labels)
-    data_sets.test = DataSet(test_images, test_labels)
-    #data_sets.test_Trick = DataSet(test_images_Trick, test_labels_Trick)
+    data_sets.train = TensorDataset(torch.tensor(train_images), torch.tensor(train_labels))
+    data_sets.test = TensorDataset(torch.tensor(test_images), torch.tensor(test_labels))
+    # data_sets.test_Trick = TensorDataset(torch.tensor(test_images_Trick), torch.tensor(test_labels_Trick))
+    if (VALIDATION_SIZE!=0):
+        data_sets.validation = TensorDataset(torch.tensor(validation_images), torch.tensor(validation_labels))
+    # data_sets.train = CustomDataSet(train_images, train_labels, lx)
+    # data_sets.test = CustomDataSet(test_images, test_labels, lx)
+    # if (VALIDATION_SIZE!=0):
+    #     data_sets.validation = CustomDataSet(validation_images, validation_labels, lx)
     return data_sets

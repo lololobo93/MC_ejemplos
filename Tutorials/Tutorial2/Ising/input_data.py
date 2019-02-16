@@ -55,7 +55,6 @@ def extract_labels(nlabels,filename, one_hot=False):
     print(labels.shape)
     return labels
 
-
 class CustomDataSet(Dataset):
     def __init__(self, images, labels, lx, fake_data=False):
         if fake_data:
