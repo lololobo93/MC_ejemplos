@@ -14,7 +14,7 @@ lx=30
 
 #parameters of the neural network and cost function
 numberlabels=2 # Number of phases under consideration (2 for the Ising model on the square lattice) 
-hiddenunits1=100 # number of hidden unites in the hidden layer
+hiddenunits1=3#100 # number of hidden unites in the hidden layer
 lamb=0.001 # regularization parameter 
 beta=1.0 #``inverse temperature'' of the sigmoid neuron
 
@@ -103,9 +103,9 @@ for i in range(niter):
     preds = model(x_test)
     print("step {}, test accuracy {}".format(i, accuracy(preds, y_test)))
 preds = model(x_train)
-print("Final training accuracy {}".format(i, accuracy(preds, y_train)))
+print("Final training accuracy {}".format(accuracy(preds, y_train)))
 preds = model(x_test)
-print("Final test accuracy {}".format(i, accuracy(preds, y_test)))
+print("Final test accuracy {}".format(accuracy(preds, y_test)))
 
 # f = open('hlout.dat', 'w')
 # for ii in range(Ntemp*samples_per_T):

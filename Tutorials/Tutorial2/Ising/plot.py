@@ -14,8 +14,8 @@ plt.plot(x,y2,marker='s',markersize=5,color=c,linewidth=1,label='High-T neuron')
 
 leg = plt.legend(loc='best',numpoints=1,markerscale=1.0,fontsize=15,labelspacing=0.1)
 
-plt.ylabel('Average output layer', fontsize=15)
-plt.xlabel(r'$T$', fontsize=15,labelpad=0)
+plt.ylabel('Output layer', fontsize=15)
+# plt.xlabel(r'$T$', fontsize=15,labelpad=0)
 plt.xlim([1,3.5383706284260401])
 
 x=[2.26918,2.26918]
@@ -30,7 +30,7 @@ y1=dataII[:,2]
 c = plt.cm.Spectral((3)/4.,1)
 plt.plot(x,y1,marker='*',markersize=5,color=c,linewidth=1)
 
-plt.ylabel('Average accuracy', fontsize=15)
+plt.ylabel('Accuracy', fontsize=15)
 plt.xlabel(r'$T$', fontsize=15,labelpad=0)
 plt.xlim([1,3.5383706284260401])
 plt.ylim([0.6,1])
@@ -56,7 +56,7 @@ plt.scatter(x, y2)
 plt.scatter(x, y3)
 
 plt.ylabel(r'$W x + b$', fontsize=15)
-plt.xlabel(r'$T$', fontsize=15,labelpad=0)
+plt.xlabel(r'$M$', fontsize=15,labelpad=0)
 # plt.xlim([-1, 1])
 
 plt.savefig('hidenlayeroutput.pdf')
