@@ -69,7 +69,9 @@ device = torch.device("cuda:0" if use_cuda else "cpu")
 model = red().to(device)
 optimizer =  optim.Adam(model.parameters(), 
                 lr=1.0e-4)
-loss_func = F.binary_cross_entropy
+# loss_func = F.binary_cross_entropy
+def loss_func(pred, labels):
+   return -torch.sum(labels*torch.log(torch.clamp(pred, 1e-10, 1.0))) 
 train_dl = DataLoader(mnist.train, **params)
 # train_dl = DataLoader(mnist.test, **params)
 
@@ -100,30 +102,24 @@ print("Final training accuracy {}".format(accuracy(preds, y_train)))
 preds = model(x_test)
 print("Final test accuracy {}".format(accuracy(preds, y_test)))
 
-#producing data to get the plots we like
+#producing plots of the results
+f = open('nnout.dat', 'w')
+# Average output of neural net over the test set
+ii=0
+for i in range(Ntemp):
+  av=0.0
+  for j in range(samples_per_T_test):
+        res = model(x_test[ii])
+        av=av+res 
+        ii=ii+1 
+  av_np=av.detach().data.cpu().numpy()/samples_per_T_test
+  f.write(str(i)+' '+str(av_np[0][0])+' '+str(av_np[0][1])+"\n")  
+f.close()
 
-# f = open('nnout.dat', 'w')
-
-# #output of neural net
-# ii=0
-# for i in range(Ntemp):
-#   av=0.0
-#   for j in range(samples_per_T_test):
-#         batch=(mnist.test.images[ii,:].reshape((1,2*(lx+1)*(lx+1))),mnist.test.labels[ii,:].reshape((1,numberlabels)))
-#         res=sess.run(y_conv,feed_dict={x: batch[0], y_: batch[1],keep_prob: 1.0})
-#         av=av+res
-#         #print ii, res
-#         ii=ii+1
-#   av=av/samples_per_T_test
-#   f.write(str(i)+' '+str(av[0,0])+' '+str(av[0,1])+"\n") 
-# f.close() 
-
-# f = open('acc.dat', 'w')
-
-# # accuracy vs temperature
-# for ii in range(Ntemp):
-#   batch=(mnist.test.images[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape(samples_per_T_test,2*(lx+1)*(lx+1)), mnist.test.labels[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test,:].reshape((samples_per_T_test,numberlabels)) )
-#   train_accuracy = sess.run(accuracy,feed_dict={
-#         x:batch[0], y_: batch[1], keep_prob: 1.0})
-#   f.write(str(ii)+' '+str(train_accuracy)+"\n")
-# f.close()
+# Average accuracy vs temperature over the test set
+f = open('acc.dat', 'w')
+for ii in range(Ntemp):
+  preds = model(x_test[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test])
+  train_accuracy = accuracy(preds, y_test[ii*samples_per_T_test:ii*samples_per_T_test+samples_per_T_test])
+  f.write(str(ii)+' '+str(train_accuracy.item())+"\n") #
+f.close()
