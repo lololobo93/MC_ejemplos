@@ -23,7 +23,7 @@ nn=np.loadtxt(path_to_lattice)
 
 #Sampling parameters:
 num_samples  = 500  # how many independent chains will be sampled
-gibb_updates = 2    # how many gibbs updates per call to the gibbs sampler
+gibb_updates = 100    # how many gibbs updates per call to the gibbs sampler
 nbins        = 100  # number of calls to the RBM sampler
 
 observables_dir = 'data_ising2d/RBM_observables'
@@ -54,7 +54,7 @@ for i in range(len(T_list)):
 	model.load_state_dict(torch.load(path_to_params))
 	model.to(device)
 	# Initialize RBM class
-	# model.h_sample = model.h_sample.cuda()
+	model.h_sample = model.h_sample.cuda()
 	_,samples = model.stochastic_maximum_likelihood(k=gibb_updates)
 	rbm_samples.append(samples.detach().cpu().numpy())
 #end of loop over temperatures
