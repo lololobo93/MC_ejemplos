@@ -84,5 +84,5 @@ plt.ylabel('$\chi/N$')
 plt.suptitle('%d x %d Ising model' %(L,L))
 
 plt.show()
-plt.savefig('RBM_observables.pdf')
+# plt.savefig('RBM_observables.pdf')
 
